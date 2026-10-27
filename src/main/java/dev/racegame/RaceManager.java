@@ -602,8 +602,9 @@ public final class RaceManager {
         metadata.setShadowRadius(0.55f);
         metadata.setShadowStrength(0.8f);
         metadata.setViewRange(2.0f);
-        metadata.setTransformationInterpolationDuration(1);
-        metadata.setPosRotInterpolationDuration(1);
+        // The display follows the kart every server tick; client interpolation creates visible trailing.
+        metadata.setTransformationInterpolationDuration(0);
+        metadata.setPosRotInterpolationDuration(0);
         metadata.setLeftRotation(yawRotation(vehiclePosition.yaw()));
         display.setNoGravity(true);
         display.setHasPhysics(false);
