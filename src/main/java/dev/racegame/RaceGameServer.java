@@ -13,6 +13,7 @@ public final class RaceGameServer {
         MinecraftServer.setBrandName("CHROMA RIFT // Minestom 26.3");
         boolean onlineMode = Boolean.parseBoolean(System.getenv().getOrDefault("MINESTOM_ONLINE_MODE", "false"));
         MinecraftServer server = MinecraftServer.init(onlineMode ? new Auth.Online() : new Auth.Offline());
+        ResourcePackHost.start();
 
         InstanceContainer world = MinecraftServer.getInstanceManager().createInstanceContainer();
         world.setChunkSupplier(LightingChunk::new);
@@ -29,7 +30,7 @@ public final class RaceGameServer {
         String host = System.getenv().getOrDefault("MINESTOM_HOST", "0.0.0.0");
         int port = Integer.parseInt(System.getenv().getOrDefault("MINESTOM_PORT", "25565"));
         System.out.println("CHROMA RIFT // Minestom 26.3 listening on " + host + ":" + port);
-        System.out.println("Join from a Minecraft 26.3 client, then use /race join and /race start.");
+        System.out.println("Join from a Minecraft 26.3 client, then use /race solo or /race join and /race start.");
         server.start(host, port);
     }
 }

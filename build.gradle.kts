@@ -29,6 +29,17 @@ application {
     mainClass.set("dev.racegame.RaceGameServer")
 }
 
+val resourcePackZip = tasks.register<Zip>("resourcePackZip") {
+    from(layout.projectDirectory.dir("resource-pack"))
+    archiveFileName.set("chroma-rift-pack.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("generated/resource-pack"))
+}
+
+tasks.processResources {
+    dependsOn(resourcePackZip)
+    from(resourcePackZip.map { it.archiveFile })
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release.set(25)

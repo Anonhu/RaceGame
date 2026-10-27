@@ -1,0 +1,11 @@
+{
+  "parent": "chroma_rift:item/kart_base",
+  "textures": {
+    "particle": "chroma_rift:item/kart/body_magenta",
+    "shell": "chroma_rift:item/kart/body_magenta",
+    "accent": "chroma_rift:item/kart/accent_magenta",
+    "glass": "chroma_rift:item/kart/glass",
+    "tire": "chroma_rift:item/kart/tire",
+    "hub": "chroma_rift:item/kart/hub_magenta"
+  }
+}
