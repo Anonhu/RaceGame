@@ -69,7 +69,13 @@ public final class RaceManager {
     private static final double STEERING_RATE_BASE = 5.0;
     private static final double STEERING_RATE_SPEED = 0.11;
     private static final double MAX_LANE_OFFSET = 6.5;
-    private static final double DRIVER_SEAT_FOOT_OFFSET = 0.38;
+    private static final double KART_DISPLAY_BASE_OFFSET_Y = 0.12;
+    private static final double KART_SCALE_X = 1.9;
+    private static final double KART_SCALE_Y = 1.75;
+    private static final double KART_SCALE_Z = 2.5;
+    private static final double DRIVER_SEAT_MODEL_Y = 4.38;
+    private static final double DRIVER_SEAT_FOOT_OFFSET = KART_DISPLAY_BASE_OFFSET_Y
+            + DRIVER_SEAT_MODEL_Y * KART_SCALE_Y / 16.0;
     private static final double DRIFT_CHARGE_SECONDS = 1.0;
     private static final double TAU = Math.PI * 2.0;
     private static final Path RECORDS_FILE = Path.of("data", "chroma-rift-records.properties");
@@ -604,8 +610,7 @@ public final class RaceManager {
         ItemDisplayMeta metadata = (ItemDisplayMeta) display.getEntityMeta();
         metadata.setItemStack(ItemStack.of(Material.PAPER).withItemModel(style.itemModel()));
         metadata.setDisplayContext(ItemDisplayMeta.DisplayContext.NONE);
-        metadata.setScale(new Vec(1.55, 0.94, 2.0));
-        metadata.setTranslation(displayTranslation(vehiclePosition.yaw()));
+        metadata.setScale(new Vec(KART_SCALE_X, KART_SCALE_Y, KART_SCALE_Z));
         metadata.setBrightness(15, 15);
         metadata.setShadowRadius(0.55f);
         metadata.setShadowStrength(0.8f);
@@ -621,7 +626,8 @@ public final class RaceManager {
     }
 
     private static Pos displayPosition(Pos vehiclePosition) {
-        return new Pos(vehiclePosition.x(), vehiclePosition.y() + 0.12, vehiclePosition.z(), 0, 0);
+        return new Pos(vehiclePosition.x(), vehiclePosition.y() + KART_DISPLAY_BASE_OFFSET_Y,
+                vehiclePosition.z(), 0, 0);
     }
 
     private static float[] yawRotation(float yawDegrees) {
@@ -629,18 +635,11 @@ public final class RaceManager {
         return new float[]{0, (float) Math.sin(halfAngle), 0, (float) Math.cos(halfAngle)};
     }
 
-    private static Vec displayTranslation(float yawDegrees) {
-        Vec modelCenter = new Vec(1.55 * 0.5, 0, 2.0 * 0.5)
-                .rotateAroundY(Math.toRadians(-yawDegrees));
-        return new Vec(-modelCenter.x(), 0, -modelCenter.z());
-    }
-
     private void updateKartDisplay(Entity display, Pos vehiclePosition) {
         if (display == null || display.isRemoved()) return;
         display.refreshPosition(displayPosition(vehiclePosition), false, true);
         AbstractDisplayMeta metadata = (AbstractDisplayMeta) display.getEntityMeta();
         metadata.setLeftRotation(yawRotation(vehiclePosition.yaw()));
-        metadata.setTranslation(displayTranslation(vehiclePosition.yaw()));
     }
 
     private void failJoin(Racer racer, Throwable error) {
