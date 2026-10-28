@@ -69,13 +69,18 @@ public final class RaceManager {
     private static final double STEERING_RATE_BASE = 5.0;
     private static final double STEERING_RATE_SPEED = 0.11;
     private static final double MAX_LANE_OFFSET = 6.5;
-    private static final double KART_DISPLAY_BASE_OFFSET_Y = 0.12;
     private static final double KART_SCALE_X = 1.9;
     private static final double KART_SCALE_Y = 1.75;
     private static final double KART_SCALE_Z = 2.5;
+    // kart_base uses 0..16 model coordinates; ItemDisplay scales around the model center (8, 8, 8).
+    private static final double KART_MODEL_ORIGIN_Y = 8.0;
+    private static final double KART_MODEL_MIN_Y = 0.55;
+    private static final double KART_GROUND_CLEARANCE_Y = 0.0;
+    private static final double KART_DISPLAY_Y_OFFSET = KART_GROUND_CLEARANCE_Y
+            + (KART_MODEL_ORIGIN_Y - KART_MODEL_MIN_Y) * KART_SCALE_Y / 16.0;
     private static final double DRIVER_SEAT_MODEL_Y = 4.38;
-    private static final double DRIVER_SEAT_FOOT_OFFSET = KART_DISPLAY_BASE_OFFSET_Y
-            + DRIVER_SEAT_MODEL_Y * KART_SCALE_Y / 16.0;
+    private static final double DRIVER_SEAT_FOOT_OFFSET = KART_GROUND_CLEARANCE_Y
+            + (DRIVER_SEAT_MODEL_Y - KART_MODEL_MIN_Y) * KART_SCALE_Y / 16.0;
     private static final double DRIFT_CHARGE_SECONDS = 1.0;
     private static final double TAU = Math.PI * 2.0;
     private static final Path RECORDS_FILE = Path.of("data", "chroma-rift-records.properties");
@@ -608,8 +613,10 @@ public final class RaceManager {
     private Entity createKartDisplay(KartStyle style, Pos vehiclePosition) {
         Entity display = new Entity(EntityType.ITEM_DISPLAY);
         ItemDisplayMeta metadata = (ItemDisplayMeta) display.getEntityMeta();
-        metadata.setItemStack(ItemStack.of(Material.PAPER).withItemModel(style.itemModel()));
+        metadata.setItemStack(ItemStack.of(Material.CLAY_BALL)
+                .with(DataComponents.ITEM_MODEL, style.itemModel()));
         metadata.setDisplayContext(ItemDisplayMeta.DisplayContext.NONE);
+        metadata.setBillboardRenderConstraints(AbstractDisplayMeta.BillboardConstraints.FIXED);
         metadata.setScale(new Vec(KART_SCALE_X, KART_SCALE_Y, KART_SCALE_Z));
         metadata.setBrightness(15, 15);
         metadata.setShadowRadius(0.55f);
@@ -626,7 +633,7 @@ public final class RaceManager {
     }
 
     private static Pos displayPosition(Pos vehiclePosition) {
-        return new Pos(vehiclePosition.x(), vehiclePosition.y() + KART_DISPLAY_BASE_OFFSET_Y,
+        return new Pos(vehiclePosition.x(), vehiclePosition.y() + KART_DISPLAY_Y_OFFSET,
                 vehiclePosition.z(), 0, 0);
     }
 
