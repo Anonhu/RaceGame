@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ResourcePackHost {
     private static final String PACK_PATH = "/chroma-rift-pack.zip";
     private static final String HTTP_PATH = "/chroma-rift-pack.zip";
-    private static final UUID PACK_ID = UUID.nameUUIDFromBytes("chroma-rift-pack-v1".getBytes(StandardCharsets.UTF_8));
+    private static final UUID PACK_ID = UUID.nameUUIDFromBytes("chroma-rift-pack-v2".getBytes(StandardCharsets.UTF_8));
     private static final Set<UUID> OFFERED_PLAYERS = ConcurrentHashMap.newKeySet();
     private static volatile ResourcePackHost active;
 

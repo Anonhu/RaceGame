@@ -6,6 +6,9 @@
     "accent": "chroma_rift:item/kart/accent_violet",
     "glass": "chroma_rift:item/kart/glass",
     "tire": "chroma_rift:item/kart/tire",
-    "hub": "chroma_rift:item/kart/hub_violet"
+    "hub": "chroma_rift:item/kart/hub_violet",
+    "interior": "chroma_rift:item/kart/interior_violet",
+    "light": "chroma_rift:item/kart/light",
+    "tail": "chroma_rift:item/kart/tail_light"
   }
 }
