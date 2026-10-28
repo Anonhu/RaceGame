@@ -17,7 +17,6 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.entity.attribute.Attribute;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta;
 import net.minestom.server.entity.metadata.display.ItemDisplayMeta;
-import net.minestom.server.entity.metadata.other.ArmorStandMeta;
 import net.minestom.server.utils.entity.EntityUtils;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -72,13 +71,18 @@ public final class RaceManager {
     private static final double KART_SCALE_X = 1.9;
     private static final double KART_SCALE_Y = 1.75;
     private static final double KART_SCALE_Z = 2.5;
+    private static final float KART_MODEL_YAW_OFFSET_DEGREES = 180.0f;
     // kart_base uses 0..16 model coordinates; ItemDisplay scales around the model center (8, 8, 8).
+    private static final double KART_MODEL_ORIGIN_X = 8.0;
     private static final double KART_MODEL_ORIGIN_Y = 8.0;
+    private static final double KART_MODEL_ORIGIN_Z = 8.0;
     private static final double KART_MODEL_MIN_Y = 0.55;
     private static final double KART_GROUND_CLEARANCE_Y = 0.0;
     private static final double KART_DISPLAY_Y_OFFSET = KART_GROUND_CLEARANCE_Y
             + (KART_MODEL_ORIGIN_Y - KART_MODEL_MIN_Y) * KART_SCALE_Y / 16.0;
+    private static final double DRIVER_SEAT_MODEL_X = 8.0;
     private static final double DRIVER_SEAT_MODEL_Y = 4.38;
+    private static final double DRIVER_SEAT_MODEL_Z = 7.45;
     private static final double DRIVER_SEAT_FOOT_OFFSET = KART_GROUND_CLEARANCE_Y
             + (DRIVER_SEAT_MODEL_Y - KART_MODEL_MIN_Y) * KART_SCALE_Y / 16.0;
     private static final double DRIFT_CHARGE_SECONDS = 1.0;
@@ -426,7 +430,7 @@ public final class RaceManager {
             bot.lastEffectsAt = 0;
             bot.lastTickNanos = System.nanoTime();
             Pos position = TrackBuilder.vehiclePosition(bot.angle, bot.laneOffset);
-            bot.vehicle.refreshPosition(position, false, true);
+            bot.vehicle.teleport(position);
             updateKartDisplay(bot.kartDisplay, position);
             playSoundAt(SoundEvent.ENTITY_FIREWORK_ROCKET_LAUNCH, position, 0.45f, 0.9f);
         }
@@ -472,7 +476,7 @@ public final class RaceManager {
                     TrackBuilder.RADIUS_Z * Math.cos(bot.angle));
             if (pathScale > 0) bot.angle += bot.speed * deltaSeconds / pathScale;
             Pos position = TrackBuilder.vehiclePosition(bot.angle, bot.laneOffset);
-            bot.vehicle.refreshPosition(position, false, true);
+            bot.vehicle.teleport(position);
             updateKartDisplay(bot.kartDisplay, position);
             bot.lastEffectsAt = emitKartTrail(position, bot.angle, bot.speed, bot.style.accentRgb(),
                     bot.driftProgress >= 0.35, bot.lastEffectsAt, nowMillis);
@@ -574,7 +578,7 @@ public final class RaceManager {
                 vehicle.remove();
                 return;
             }
-            vehicle.refreshPosition(seatAnchorPosition(grid, vehicle, racer.player), false, true);
+            vehicle.teleport(seatAnchorPosition(grid, vehicle, racer.player)).join();
             vehicle.addPassenger(racer.player);
             racer.vehicle = vehicle;
             racer.kartDisplay = createKartDisplay(racer.style, grid);
@@ -594,10 +598,12 @@ public final class RaceManager {
     }
 
     private Entity createSeatAnchor() {
-        Entity seat = new Entity(EntityType.ARMOR_STAND);
-        ArmorStandMeta metadata = (ArmorStandMeta) seat.getEntityMeta();
-        metadata.setInvisible(true);
-        metadata.setHasNoBasePlate(true);
+        Entity seat = new Entity(EntityType.ITEM_DISPLAY);
+        ItemDisplayMeta metadata = (ItemDisplayMeta) seat.getEntityMeta();
+        metadata.setItemStack(ItemStack.AIR);
+        metadata.setBillboardRenderConstraints(AbstractDisplayMeta.BillboardConstraints.FIXED);
+        metadata.setScale(Vec.ZERO);
+        metadata.setPosRotInterpolationDuration(1);
         seat.setNoGravity(true);
         seat.setHasPhysics(false);
         seat.setVelocity(Vec.ZERO);
@@ -606,8 +612,14 @@ public final class RaceManager {
 
     private static Pos seatAnchorPosition(Pos carPosition, Entity seat, Player player) {
         double passengerOffsetY = EntityUtils.getPassengerPositionOffset(seat, player, 0).y();
-        return new Pos(carPosition.x(), carPosition.y() + DRIVER_SEAT_FOOT_OFFSET - passengerOffsetY,
-                carPosition.z(), carPosition.yaw(), 0);
+        Vec localSeatOffset = new Vec(
+                (DRIVER_SEAT_MODEL_X - KART_MODEL_ORIGIN_X) * KART_SCALE_X / 16.0,
+                0.0,
+                (DRIVER_SEAT_MODEL_Z - KART_MODEL_ORIGIN_Z) * KART_SCALE_Z / 16.0
+        ).rotateAroundY(Math.toRadians(-carPosition.yaw()));
+        return new Pos(carPosition.x() + localSeatOffset.x(),
+                carPosition.y() + DRIVER_SEAT_FOOT_OFFSET - passengerOffsetY,
+                carPosition.z() + localSeatOffset.z(), carPosition.yaw(), 0);
     }
 
     private Entity createKartDisplay(KartStyle style, Pos vehiclePosition) {
@@ -622,10 +634,10 @@ public final class RaceManager {
         metadata.setShadowRadius(0.55f);
         metadata.setShadowStrength(0.8f);
         metadata.setViewRange(2.0f);
-        // The display follows the seat anchor every server tick; zero interpolation keeps it tight to the rider.
-        metadata.setTransformationInterpolationDuration(0);
-        metadata.setPosRotInterpolationDuration(0);
-        metadata.setLeftRotation(yawRotation(vehiclePosition.yaw()));
+        // Match the Blockbench FIXED-item convention: the base item transform flips Z by 180 degrees.
+        metadata.setTransformationInterpolationDuration(1);
+        metadata.setPosRotInterpolationDuration(1);
+        metadata.setLeftRotation(yawRotation(vehiclePosition.yaw() + KART_MODEL_YAW_OFFSET_DEGREES));
         display.setNoGravity(true);
         display.setHasPhysics(false);
         display.setInstance(instance, displayPosition(vehiclePosition)).join();
@@ -644,9 +656,10 @@ public final class RaceManager {
 
     private void updateKartDisplay(Entity display, Pos vehiclePosition) {
         if (display == null || display.isRemoved()) return;
-        display.refreshPosition(displayPosition(vehiclePosition), false, true);
+        display.teleport(displayPosition(vehiclePosition));
         AbstractDisplayMeta metadata = (AbstractDisplayMeta) display.getEntityMeta();
-        metadata.setLeftRotation(yawRotation(vehiclePosition.yaw()));
+        metadata.setTransformationInterpolationStartDelta(0);
+        metadata.setLeftRotation(yawRotation(vehiclePosition.yaw() + KART_MODEL_YAW_OFFSET_DEGREES));
     }
 
     private void failJoin(Racer racer, Throwable error) {
@@ -707,7 +720,7 @@ public final class RaceManager {
                     TrackBuilder.RADIUS_Z * Math.cos(racer.angle));
             if (pathScale > 0) racer.angle += racer.speed * deltaSeconds / pathScale;
             Pos vehiclePosition = TrackBuilder.vehiclePosition(racer.angle, racer.laneOffset);
-            vehicle.refreshPosition(seatAnchorPosition(vehiclePosition, vehicle, racer.player), false, true);
+            vehicle.teleport(seatAnchorPosition(vehiclePosition, vehicle, racer.player));
             updateKartDisplay(racer.kartDisplay, vehiclePosition);
             racer.lastEffectsAt = emitKartTrail(vehiclePosition, racer.angle, racer.speed,
                     racer.style.accentRgb(), racer.driftProgress >= 0.35, racer.lastEffectsAt, nowMillis);
@@ -939,7 +952,7 @@ public final class RaceManager {
             racer.lastTickNanos = System.nanoTime();
             racer.player.getInventory().setItemStack(0, pulseCell(racer.boostCharges));
             Pos vehiclePosition = TrackBuilder.vehiclePosition(racer.angle, racer.laneOffset);
-            racer.vehicle.refreshPosition(seatAnchorPosition(vehiclePosition, racer.vehicle, racer.player), false, true);
+            racer.vehicle.teleport(seatAnchorPosition(vehiclePosition, racer.vehicle, racer.player));
             updateKartDisplay(racer.kartDisplay, vehiclePosition);
             racer.player.playSound(Sound.sound(SoundEvent.ENTITY_FIREWORK_ROCKET_LAUNCH, Sound.Source.PLAYER, 0.65f, 0.75f));
             racer.player.sendMessage(Component.text("GO! Три круга. Пройди четыре портала в правильном порядке.", NamedTextColor.GREEN, TextDecoration.BOLD));
