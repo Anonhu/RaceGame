@@ -1,0 +1,14 @@
+{
+  "parent": "chroma_rift:item/kart_base",
+  "textures": {
+    "particle": "chroma_rift:item/kart/body_cyan",
+    "shell": "chroma_rift:item/kart/body_cyan",
+    "accent": "chroma_rift:item/kart/accent_cyan",
+    "glass": "chroma_rift:item/kart/glass",
+    "tire": "chroma_rift:item/kart/tire",
+    "hub": "chroma_rift:item/kart/hub_cyan",
+    "interior": "chroma_rift:item/kart/interior_cyan",
+    "light": "chroma_rift:item/kart/light",
+    "tail": "chroma_rift:item/kart/tail_light"
+  }
+}
